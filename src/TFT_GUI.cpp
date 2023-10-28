@@ -4,26 +4,25 @@ MessageTFT::MessageTFT(Adafruit_ILI9341 &_tft)
 {
   TFT[0] = &_tft;
 }
-void MessageTFT::createMSG(const char *txt, bool center_txt)
+void MessageTFT::createMSG(const char *txt)
 {
-  screen_rotation = TFT[0]->getRotation();
   _drawFace();
-  _put_text(txt, txt_color, center_txt);
+  _put_text(txt);
 }
-void MessageTFT::createPage(const char *txt[], uint8_t r, bool center_txt)
+void MessageTFT::createPage(const char *txt[])
 {
-  createMSG("", false);
+  createMSG("");
   const uint8_t shiftxy = 5;
-  for (uint8_t i = 0; i < r; i++) // multiple lines
+  for (uint8_t i = 0; i < tft_entity.corner_radius; i++) // multiple lines
   {
     TFT[0]->setCursor(TFT[0]->getCursorX() + shiftxy, TFT[0]->getCursorY() + shiftxy);
     TFT[0]->println(txt[i]);
   }
 }
-void MessageTFT::updateTXT(const char *txt, bool center_txt)
+void MessageTFT::updateTXT(const char *txt)
 {
-  _put_text(txt_buf, face_color, center_txt); // faster to change color txt to face color, than redraw (mostly for clks)
-  _put_text(txt, txt_color, center_txt);
+  _put_text(_txt_buf,tft_entity.face_color); // faster to change color txt to face color, than redraw (mostly for clks)
+  _put_text(txt);
 }
 void MessageTFT::clear_screen(uint8_t c)
 {
@@ -42,58 +41,62 @@ void MessageTFT::clear_screen(uint8_t c)
 }
 void MessageTFT::_drawFace()
 {
-  const uint8_t _radius = 2;
-
-  if (roundRect == false)
+  if (tft_entity.roundRect == false)
   {
-    TFT[0]->fillRect(xc - a / 2, yc - b / 2, a, b, face_color);
+    TFT[0]->fillRect(tft_entity.w_pos - tft_entity.w / 2, tft_entity.h_pos - tft_entity.h / 2,
+                     tft_entity.w, tft_entity.h, tft_entity.face_color);
   }
   else
   {
-    TFT[0]->fillRoundRect(xc - a / 2, yc - b / 2, a, b, _radius, face_color);
+    TFT[0]->fillRoundRect(tft_entity.w_pos - tft_entity.w / 2, tft_entity.h_pos - tft_entity.h / 2,
+                          tft_entity.w, tft_entity.h, tft_entity.corner_radius, tft_entity.face_color);
   }
 
-  if (face_color != border_color)
+  if (tft_entity.face_color != tft_entity.border_color && tft_entity.useBorder == true)
   {
-    _drawBorder(_radius);
+    _drawBorder();
   }
 }
-void MessageTFT::_drawBorder(uint8_t _radius)
+void MessageTFT::_drawBorder()
 {
-  for (uint8_t t = 0; t < border_thickness * 2; t++)
+  for (uint8_t t = 0; t < tft_entity.border_thickness; t++)
   {
-    if (roundRect == false)
+    if (tft_entity.roundRect == false)
     {
-      TFT[0]->drawRect((xc - a / 2) + t / 2, (yc - b / 2) + t / 2, a - t, b - t, border_color); /* how to change border direction ?*/
+      TFT[0]->drawRect(tft_entity.w_pos - tft_entity.w / 2 - t, tft_entity.h_pos - tft_entity.h / 2 - t,
+                       tft_entity.w + 2 * t, tft_entity.h + 2 * t, tft_entity.border_color); /* how to change border direction ?*/
     }
     else
     {
-      TFT[0]->drawRoundRect((xc - a / 2) + t / 2, (yc - b / 2) + t / 2, a - t, b - t, /*_radius - t*/2, border_color);
+      TFT[0]->drawRoundRect((tft_entity.w_pos - tft_entity.w / 2) - t, (tft_entity.h_pos - tft_entity.h / 2) - t,
+                            tft_entity.w + 2 * t, tft_entity.h + 2 * t, tft_entity.corner_radius + t, tft_entity.border_color);
     }
   }
 }
-void MessageTFT::_put_text(const char *txt, uint16_t color, bool center_txt)
+void MessageTFT::_put_text(const char *txt, uint16_t color)
 {
-  strcpy(txt_buf, txt);
-  uint8_t x = strlen(txt_buf);
-  if (center_txt)
+  strcpy(_txt_buf, txt);
+  uint8_t x = strlen(_txt_buf);
+  if (tft_entity.center_txt)
   {
-    TFT[0]->setCursor(xc - x * _pos_corr_factor_x * txt_size, yc - _pos_corr_factor_y * txt_size);
+    TFT[0]->setCursor(tft_entity.w_pos - x * _pos_corr_factor_x * tft_entity.txt_size, tft_entity.h_pos - _pos_corr_factor_y * tft_entity.txt_size);
   }
   else
   {
-    TFT[0]->setCursor(xc - a / 2, yc - b / 2);
+    TFT[0]->setCursor(tft_entity.w_pos - tft_entity.w / 2, tft_entity.h_pos - tft_entity.h / 2);
   }
+
   if (color != 0)
+  {
+    TFT[0]->setTextColor(tft_entity.txt_color);
+  }
+  else
   {
     TFT[0]->setTextColor(color);
   }
-  else
-  {
-    TFT[0]->setTextColor(txt_color);
-  }
-  TFT[0]->setTextSize(txt_size);
-  TFT[0]->print(txt_buf);
+  // TFT[0]->setTextColor(tft_entity.txt_color);
+  TFT[0]->setTextSize(tft_entity.txt_size);
+  TFT[0]->print(_txt_buf);
 }
 
 ButtonTFT::ButtonTFT(XPT2046_Touchscreen &_ts, Adafruit_ILI9341 &_tft)
@@ -101,7 +104,7 @@ ButtonTFT::ButtonTFT(XPT2046_Touchscreen &_ts, Adafruit_ILI9341 &_tft)
   TFT[0] = &_tft;
   TS[0] = &_ts;
 }
-void ButtonTFT::createButton(const char *txt)
+void ButtonTFT::createButton(const char *txt, bool center_txt, uint8_t _radius)
 {
   createMSG(txt);
 }
@@ -123,7 +126,7 @@ bool ButtonTFT::checkPress(TS_Point &p) /* can be called from code outside lib w
   {
     if (latchButton)
     {
-      latchState = !latchState;
+      _latchState = !_latchState;
     }
     _press_cb();
     return 1;
@@ -133,32 +136,36 @@ bool ButtonTFT::checkPress(TS_Point &p) /* can be called from code outside lib w
     return 0;
   }
 }
+bool ButtonTFT::get_buttonState()
+{
+  return _latchState;
+}
 void ButtonTFT::_press_cb()
 {
-  uint8_t _press_del = 500; // slow down re-triggerring
+  int _press_del = 500; // slow down re-triggerring
   if (latchButton == false)
   {
     _face_color_t = face_color;
     face_color = pressedColor;
-    createMSG(txt_buf);
+    createMSG(_txt_buf);
     delay(_press_del);
     face_color = _face_color_t;
-    createMSG(txt_buf);
+    createMSG(_txt_buf);
     delay(_press_del);
   }
   else
   {
-    if (latchState == true) /* Pressed ON*/
+    if (_latchState == true) /* Pressed ON*/
     {
       _face_color_t = face_color;
       face_color = pressedColor;
-      createMSG(txt_buf);
+      createMSG(_txt_buf);
       delay(_press_del);
     }
     else /* Pressed Off*/
     {
       face_color = _face_color_t;
-      createMSG(txt_buf);
+      createMSG(_txt_buf);
       delay(_press_del);
     }
   }
@@ -166,25 +173,11 @@ void ButtonTFT::_press_cb()
 bool ButtonTFT::_check_press_geometry(TS_Point &p)
 {
   _conv_ts_tft(p);
-  if (_tft_x <= xc + a / 2 && _tft_x >= xc - a / 2)
-  {
-    if (_tft_y <= yc + b / 2 && _tft_y >= yc - b / 2)
-    {
-      return 1;
-    }
-    else
-    {
-      return 0;
-    }
-  }
-  else
-  {
-    return 0;
-  }
+  return ((_tft_x <= tft_entity.h_pos + tft_entity.h / 2 && _tft_x >= tft_entity.h_pos - tft_entity.h / 2) && (_tft_y <= tft_entity.w_pos + tft_entity.w / 2 && _tft_y >= tft_entity.w_pos - tft_entity.w / 2));
 }
 void ButtonTFT::_conv_ts_tft(TS_Point &p)
 {
-  if (screen_rotation == 1 || screen_rotation == 3)
+  if (TFT[0]->getRotation() == 1 || TFT[0]->getRotation() == 3)
   {
     _tft_x = _TS2TFT_x(p.x);
     _tft_y = _TS2TFT_y(p.y);
@@ -197,19 +190,19 @@ void ButtonTFT::_conv_ts_tft(TS_Point &p)
 }
 int ButtonTFT::_TS2TFT_x(int px)
 {
-  if (screen_rotation == 0)
+  if (TFT[0]->getRotation() == 0)
   {
     return map(px, TS_MAX_X, TS_MIN_X, 0, tft.height());
   }
-  else if (screen_rotation == 1)
+  else if (TFT[0]->getRotation() == 1)
   {
     return map(px, TS_MAX_X, TS_MIN_X, 0, tft.width());
   }
-  else if (screen_rotation == 2)
+  else if (TFT[0]->getRotation() == 2)
   {
     return map(px, TS_MIN_X, TS_MAX_X, 0, tft.height());
   }
-  else if (screen_rotation == 3)
+  else if (TFT[0]->getRotation() == 3)
   {
     return map(px, TS_MIN_X, TS_MAX_X, 0, tft.width());
   }
@@ -220,19 +213,19 @@ int ButtonTFT::_TS2TFT_x(int px)
 }
 int ButtonTFT::_TS2TFT_y(int py)
 {
-  if (screen_rotation == 0)
+  if (TFT[0]->getRotation() == 0)
   {
     return map(py, TS_MAX_Y, TS_MIN_Y, 0, tft.width());
   }
-  else if (screen_rotation == 1)
+  else if (TFT[0]->getRotation() == 1)
   {
     return map(py, TS_MIN_Y, TS_MAX_Y, 0, tft.height());
   }
-  else if (screen_rotation == 2)
+  else if (TFT[0]->getRotation() == 2)
   {
     return map(py, TS_MIN_Y, TS_MAX_Y, 0, tft.width());
   }
-  else if (screen_rotation == 3)
+  else if (TFT[0]->getRotation() == 3)
   {
     return map(py, TS_MAX_Y, TS_MIN_Y, 0, tft.height());
   }
@@ -300,7 +293,7 @@ bool keypadTFT::_check_pressed_in(TS_Point &p)
     }
     else
     {
-      strcat(_stored_keypad_value, _butarray.butarray[i].txt_buf);
+      // strcat(_stored_keypad_value, _butarray.butarray[i]._txt_buf); // NEED TO BE FIXED SINCE IT IS PROTECTED NOW //
       counter = strlen(_stored_keypad_value);
       return false;
     }

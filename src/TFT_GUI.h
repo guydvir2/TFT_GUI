@@ -26,58 +26,84 @@ const uint8_t _pos_corr_factor_y = 4;
 extern XPT2046_Touchscreen ts; /* Touch screen */
 extern Adafruit_ILI9341 tft;   /* Graphics */
 
+struct TFT_entity
+{
+  bool roundRect = false;
+  bool useBorder = false;
+  bool center_txt = true;
+
+  int w_pos = 0;
+  int h_pos = 0;
+  uint8_t w = 0;
+  uint8_t h = 0;
+  uint8_t txt_size = 2;
+  uint8_t border_thickness = 1;
+  uint8_t corner_radius = 5;
+
+  uint16_t txt_color = ILI9341_BLACK;
+  uint16_t border_color = ILI9341_RED;
+  uint16_t face_color = ILI9341_GREENYELLOW;
+};
+
 class MessageTFT
 {
 public:
+  TFT_entity tft_entity;
+
   int xc = 0;
   int yc = 0;
   uint8_t a = 0;
   uint8_t b = 0;
   uint8_t txt_size = 2;
-  uint8_t border_thickness = 1;
+
   uint8_t screen_rotation = 0;
-  uint16_t face_color = ILI9341_GREENYELLOW;
+  uint8_t border_thickness = 1;
   uint16_t txt_color = ILI9341_BLACK;
   uint16_t border_color = ILI9341_RED;
-  char txt_buf[30];
+  uint16_t face_color = ILI9341_GREENYELLOW;
+
   bool roundRect = false;
   bool useBorder = false;
 
   Adafruit_ILI9341 *TFT[1];
 
+protected:
+  char _txt_buf[30];
+  // uint8_t _screen_rotation = 0;
+
 public:
   MessageTFT(Adafruit_ILI9341 &_tft = tft);
-  void createMSG(const char *txt, bool center_txt = true);
-  void createPage(const char *txt[], uint8_t r, bool center_txt = true); // Multiple Lines in MSG
-  void updateTXT(const char *txt, bool center_txt = true);
+  void createMSG(const char *txt);
+  void createPage(const char *txt[]); // Multiple Lines in MSG
+  void updateTXT(const char *txt);
   void clear_screen(uint8_t c = 0);
 
 private:
-  void _put_text(const char *txt, uint16_t color = 0, bool center_txt = true);
+  void _put_text(const char *txt, uint16_t color = 0);
   void _drawFace();
-  void _drawBorder(uint8_t _radius);
+  void _drawBorder();
 };
 
 class ButtonTFT : public MessageTFT
 {
 public:
-  bool latchState = false;
   bool latchButton = false;
   uint16_t pressedColor = ILI9341_RED;
   XPT2046_Touchscreen *TS[1];
 
 public:
   ButtonTFT(XPT2046_Touchscreen &_ts = ts, Adafruit_ILI9341 &_tft = tft);
-  void createButton(const char *txt);
+  void createButton(const char *txt, bool center_txt = true, uint8_t _radius = 5);
   bool wait4press();
   bool checkPress(TS_Point &p);
+  bool get_buttonState();
 
 private:
+  bool _latchState = false;
   int _tft_x, _tft_y;
   uint16_t _face_color_t;
 
 private:
-  void _put_text();
   void _press_cb();
   void _conv_ts_tft(TS_Point &p);
   bool _check_press_geometry(TS_Point &p);
