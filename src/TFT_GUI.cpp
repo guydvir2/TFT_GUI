@@ -129,10 +129,6 @@ bool ButtonTFT::checkPress(TS_Point &p) /* can be called from code outside lib w
   {
     if (millis() - _lastPress > 400) /* avoid retrigger */
     {
-      if (latchButton)
-      {
-        _latchState = !_latchState;
-      }
       _press_cb();
       _lastPress = millis();
       return 1;
@@ -152,12 +148,16 @@ bool ButtonTFT::get_buttonState()
 {
   return _latchState;
 }
+void ButtonTFT::set_buttonState(bool state)
+{
+  _press_cb();
+}
 void ButtonTFT::_press_cb()
 {
   uint16_t _face_color_temp;
   int _press_del = 100; // slow down re-triggerring
 
-  if (!latchButton)
+  if (!tft_entity.latchButton)
   {
     _face_color_temp = tft_entity.face_color;
     tft_entity.face_color = tft_entity.pressface_color;
@@ -181,6 +181,7 @@ void ButtonTFT::_press_cb()
       createMSG(_txt_buf);
       delay(_press_del);
     }
+    _latchState = !_latchState;
   }
 }
 bool ButtonTFT::_check_press_geometry(TS_Point &p)
@@ -252,69 +253,70 @@ int ButtonTFT::_TS2TFT_y(int py)
 
 // keypadTFT::keypadTFT(XPT2046_Touchscreen &_ts, Adafruit_ILI9341 &_tft)
 // {
-//   _butarray.butarray[0].TFT[0] = &_tft;
-//   _butarray.butarray[0].TS[0] = &_ts;
+//   // _butarray.butarray[0].TFT[0] = &_tft;
+//   // _butarray.butarray[0].TS[0] = &_ts;
 // }
 // void keypadTFT::create_keypad()
 // {
-//   const char *txt_buttons[] = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "*", "0", "#"};
-//   _butarray.create_array(4, 3, txt_buttons);
+//   // const char *txt_buttons[] = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "*", "0", "#"};
+//   // _butarray.create_array(4, 3, txt_buttons);
 // }
+
 // bool keypadTFT::getPasscode(TS_Point &p)
 // {
-//   static unsigned long last_touch = 0;
-//   if (millis() - last_touch > 500)
-//   {
-//     if (millis() - last_touch > RESET_KEYPAD_TIMEOUT * 1000 && strcmp(_stored_keypad_value, "") != 0) /* Clear buffer after timeout */
-//     {
-//       _reset_keypad_values();
-//     }
-//     last_touch = millis();
-//     return _check_pressed_in(p); /* true only when passcode is delivered ( not only pressed ) */
-//   }
-//   else
-//   {
-//     return false;
-//   }
+//   // static unsigned long last_touch = 0;
+//   // if (millis() - last_touch > 500)
+//   // {
+//   //   if (millis() - last_touch > RESET_KEYPAD_TIMEOUT * 1000 && strcmp(_stored_keypad_value, "") != 0) /* Clear buffer after timeout */
+//   //   {
+//   //     _reset_keypad_values();
+//   //   }
+//   //   last_touch = millis();
+//   //   return _check_pressed_in(p); /* true only when passcode is delivered ( not only pressed ) */
+//   // }
+//   // else
+//   // {
+//   //   return false;
+//   // }
 // }
 // void keypadTFT::_reset_keypad_values()
 // {
-//   strcpy(_stored_keypad_value, "");
-//   counter = 0;
-// }
-// bool keypadTFT::_check_pressed_in(TS_Point &p)
-// {
-//   uint8_t i = _butarray.checkPress(p);
-//   if (i != 99)
-//   {
-//     if (i == 9) /* Erase buffer */
-//     {
-//       _reset_keypad_values();
-//       delay(100);
-//       return false;
-//     }
-//     else if (i == 11) /* Send passcode */
-//     {
-//       if (strcmp(_stored_keypad_value, "") != 0)
-//       {
-//         strcpy(keypad_value, _stored_keypad_value);
-//         _reset_keypad_values();
-//         return true;
-//       }
-//       else
-//       {
-//         return false;
-//       }
-//     }
-//     else
-//     {
-//       // strcat(_stored_keypad_value, _butarray.butarray[i]._txt_buf); // NEED TO BE FIXED SINCE IT IS PROTECTED NOW //
-//       counter = strlen(_stored_keypad_value);
-//       return false;
-//     }
-//   }
-//   else
-//   {
-//     return false;
-//   }
+// //   strcpy(_stored_keypad_value, "");
+// //   counter = 0;
+// // }
+// // bool keypadTFT::_check_pressed_in(TS_Point &p)
+// // {
+// //   uint8_t i = _butarray.checkPress(p);
+// //   if (i != 99)
+// //   {
+// //     if (i == 9) /* Erase buffer */
+// //     {
+// //       _reset_keypad_values();
+// //       delay(100);
+// //       return false;
+// //     }
+// //     else if (i == 11) /* Send passcode */
+// //     {
+// //       if (strcmp(_stored_keypad_value, "") != 0)
+// //       {
+// //         strcpy(keypad_value, _stored_keypad_value);
+// //         _reset_keypad_values();
+// //         return true;
+// //       }
+// //       else
+// //       {
+// //         return false;
+// //       }
+// //     }
+// //     else
+// //     {
+// //       // strcat(_stored_keypad_value, _butarray.butarray[i]._txt_buf); // NEED TO BE FIXED SINCE IT IS PROTECTED NOW //
+// //       counter = strlen(_stored_keypad_value);
+// //       return false;
+// //     }
+// //   }
+// //   else
+// //   {
+// //     return false;
+// //   }
 // }

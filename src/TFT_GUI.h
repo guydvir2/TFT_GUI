@@ -29,11 +29,13 @@ struct TFT_entity
   bool roundRect = false;
   bool useBorder = false;
   bool center_txt = true;
+  bool latchButton = false;
 
-  int w_pos = 0;
-  int h_pos = 0;
   int w = 0;
   int h = 0;
+  int w_pos = 0;
+  int h_pos = 0;
+
   uint8_t txt_size = 2;
   uint8_t border_thickness = 1;
   uint8_t corner_radius = 5;
@@ -48,9 +50,9 @@ class MessageTFT
 {
 public:
   TFT_entity tft_entity;
+  Adafruit_ILI9341 *TFT[1];
 
 protected:
-  Adafruit_ILI9341 *TFT[1];
   char _txt_buf[30];
 
 public:
@@ -69,19 +71,15 @@ private:
 class ButtonTFT : public MessageTFT
 {
 public:
-  bool latchButton = false;
-
-public:
   ButtonTFT(XPT2046_Touchscreen &_ts = ts, Adafruit_ILI9341 &_tft = tft);
   void createButton(const char *txt);
   bool wait4press();
   bool checkPress(TS_Point &p);
   bool get_buttonState();
-  void set_buttonState();
-
-protected:
+  void set_buttonState(bool state);
   XPT2046_Touchscreen *TS[1];
 
+protected:
 private:
   bool _latchState = false;
   unsigned long _lastPress = 0;
@@ -94,139 +92,138 @@ private:
   int _TS2TFT_y(int py);
 };
 
-// /* Button Array as class template */
-// template <uint8_t N>
-// class buttonArrayTFT
+/* Button Array as class template */
+template <uint8_t N>
+class buttonArrayTFT
+{
+public:
+  uint8_t dw = 4;           /* define spacing between buttons */
+  uint8_t dh = 4;           /* define spacing between buttons */
+  uint8_t shift_pos_h = 10; /* Shifts in y director*/
+  uint8_t shift_pos_w = 10; /* Shifts in x director*/
+
+  ButtonTFT butarray[N];
+
+public:
+  buttonArrayTFT(XPT2046_Touchscreen &_ts = ts, Adafruit_ILI9341 &_tft = tft);
+  void set_button_properties(TFT_entity entity);
+  void create_array(uint8_t R, uint8_t C, const char *but_txt[]);
+  uint8_t checkPress();
+  ButtonTFT &operator[](uint8_t index)
+  {
+    if (index < N)
+    {
+      return butarray[index];
+    }
+  }
+};
+
+template <uint8_t N>
+buttonArrayTFT<N>::buttonArrayTFT(XPT2046_Touchscreen &_ts, Adafruit_ILI9341 &_tft)
+{
+  for (int i = 0; i < N; i++)
+  {
+    butarray[i].TS[0] = &ts;
+    butarray[i].TFT[0] = &tft;
+  }
+}
+
+template <uint8_t N>
+void buttonArrayTFT<N>::create_array(uint8_t R, uint8_t C, const char *but_txt[])
+{
+  int w_start_pos = 0;
+  int h_start_pos = 0;
+
+  if (butarray[0].tft_entity.h == 0 && butarray[0].tft_entity.w == 0) /* buttons side is defined manually */
+  {
+    /* auto size */
+    butarray[0].tft_entity.w = (int)((tft.width() - dw * (C - 1)) / C);
+    butarray[0].tft_entity.h = (int)((tft.height() - dh * (R - 1)) / R);
+  }
+
+  if (shift_pos_w == 0) /* No shift is defined - Array will be centered h and w*/
+  {
+    w_start_pos = (int)(tft.width() - (C - 1) * (butarray[0].tft_entity.w + dw)) / 2;
+  }
+  else
+  {
+    w_start_pos = shift_pos_w + butarray[0].tft_entity.w / 2;
+  }
+  if (shift_pos_h == 0)
+  {
+    h_start_pos = (int)(tft.height() - (R - 1) * (butarray[0].tft_entity.h + dh)) / 2;
+  }
+  else
+  {
+    h_start_pos = shift_pos_h + butarray[0].tft_entity.h / 2;
+  }
+
+  for (uint8_t r = 0; r < R; r++)
+  {
+    for (uint8_t c = 0; c < C; c++)
+    {
+      butarray[C * r + c].tft_entity.h = butarray[0].tft_entity.h; /* Calculated or defined */
+      butarray[C * r + c].tft_entity.w = butarray[0].tft_entity.w; /* Calculated or defined */
+      butarray[C * r + c].tft_entity.h_pos = h_start_pos + r * (butarray[0].tft_entity.h + dh);
+      butarray[C * r + c].tft_entity.w_pos = w_start_pos + c * (butarray[0].tft_entity.w + dw);
+      butarray[C * r + c].tft_entity.txt_size = butarray[0].tft_entity.txt_size;
+      butarray[C * r + c].tft_entity.txt_color = butarray[0].tft_entity.txt_color;
+      butarray[C * r + c].tft_entity.border_color = butarray[0].tft_entity.border_color;
+      butarray[C * r + c].tft_entity.face_color = butarray[0].tft_entity.face_color;
+      butarray[C * r + c].tft_entity.roundRect = butarray[0].tft_entity.roundRect;
+      butarray[C * r + c].tft_entity.border_thickness = butarray[0].tft_entity.border_thickness;
+      butarray[C * r + c].tft_entity.pressface_color = butarray[0].tft_entity.pressface_color;
+      butarray[C * r + c].tft_entity.useBorder = butarray[0].tft_entity.useBorder;
+      butarray[C * r + c].tft_entity.center_txt = butarray[0].tft_entity.center_txt;
+      butarray[C * r + c].tft_entity.corner_radius = butarray[0].tft_entity.corner_radius;
+      butarray[C * r + c].tft_entity.latchButton = butarray[0].tft_entity.latchButton;
+
+      butarray[C * r + c].createButton(but_txt[C * r + c]);
+    }
+  }
+}
+
+template <uint8_t N>
+uint8_t buttonArrayTFT<N>::checkPress()
+{
+  if (butarray[0].TS[0]->touched()) // check in any press occured
+  {
+    TS_Point p = butarray[0].TS[0]->getPoint();
+    for (uint8_t i = 0; i < N; i++)
+    {
+      if (butarray[i].checkPress(p))
+      {
+        return i;
+      }
+    }
+    return 99;
+  }
+  else
+  {
+    return 99;
+  }
+}
+
+template <uint8_t N>
+void buttonArrayTFT<N>::set_button_properties(TFT_entity entity)
+{
+  butarray[0].tft_entity = entity;
+}
+
+// bool buttonArrayTFT<N>::wait4press()
 // {
-// public:
-//   int8_t dx = 5;         /* define spacing between buttons */
-//   int8_t dy = 5;         /* define spacing between buttons */
-//   uint8_t scale_f = 100; /* change the cale of array. 100% take entire screen */
-//   uint8_t scale_y = 100; /* change the cale of array. 100% take entire screen */
-
-//   uint8_t shift_y = 255; /* Shifts in y director*/
-//   uint8_t shift_x = 255; /* Shifts in x director*/
-//   int shrink_shift = 0;  /* shrink array in pixels, and shifts up/ down (+/-) */
-
-//   uint8_t &a = butarray[0].a;
-//   uint8_t &b = butarray[0].b;
-//   uint8_t &txt_size = butarray[0].txt_size;
-//   uint16_t &txt_color = butarray[0].txt_color;
-//   uint16_t &border_color = butarray[0].border_color;
-//   uint16_t &face_color = butarray[0].face_color;
-//   bool &roundRect = butarray[0].roundRect;
-//   bool &latchButton = butarray[0].latchButton;
-
-//   ButtonTFT butarray[N];
-
-// public:
-//   buttonArrayTFT(XPT2046_Touchscreen &_ts = ts, Adafruit_ILI9341 &_tft = tft);
-//   void create_array(uint8_t R, uint8_t C, const char *but_txt[]);
-//   uint8_t checkPress(TS_Point &p);
-//   ButtonTFT &operator[](uint8_t index)
+//     if (TS[0]->touched())
 //   {
-//     if (index < N)
-//     {
-//       return butarray[index];
-//     }
-//   }
-// };
-
-// template <uint8_t N>
-// buttonArrayTFT<N>::buttonArrayTFT(XPT2046_Touchscreen &_ts, Adafruit_ILI9341 &_tft)
-// {
-//   for (int i = 0; i < N; i++)
-//   {
-//     butarray[i].TS[0] = &ts;
-//     butarray[i].TFT[0] = &tft;
-//   }
-// }
-
-// template <uint8_t N>
-// void buttonArrayTFT<N>::create_array(uint8_t R, uint8_t C, const char *but_txt[])
-// {
-//   uint8_t x_margin = 0;
-//   uint8_t y_margin = 0;
-//   uint8_t but_size_a = 0;
-//   uint8_t but_size_b = 0;
-//   const uint8_t marg_clearance = 0;
-
-//   if (butarray[0].a != 0 && butarray[0].b != 0) /* buttons side is defined manually */
-//   {
-//     but_size_a = butarray[0].a;
-//     but_size_b = butarray[0].b;
-//   }
-//   else /* auto size, resize, shifted and scle factored */
-//   {
-//     but_size_a = (uint8_t)((tft.width() * scale_f / 100 - marg_clearance - dx) / C);
-//     but_size_b = (uint8_t)((tft.height() * scale_f * scale_y / 100 / 100 - abs(shrink_shift) - marg_clearance - dy) / R);
-//   }
-
-//   if (shrink_shift != 0)
-//   {
-//     y_margin = shrink_shift;
-//     x_margin = (int)(tft.width() + (1 - C) * (but_size_a + dx)) / 2;
+//     TS_Point p = TS[0]->getPoint();
+//     return checkPress(p); /* in or out ? */
 //   }
 //   else
 //   {
-//     if (shift_x == 255)
-//     {
-//       x_margin = (int)(tft.width() * scale_f / 100 + (1 - C) * (but_size_a + dx)) / 2;
-//     }
-//     else
-//     {
-//       x_margin = shift_x + but_size_a / 2;
-//     }
-//     if (shift_y == 255)
-//     {
-//       y_margin = (int)(tft.height() * scale_f * scale_y / 100 / 100 + (1 - R) * (but_size_b + dy)) / 2 + shrink_shift;
-//     }
-//     else
-//     {
-//       y_margin = shift_y + but_size_b / 2;
-//     }
-//   }
-
-//   for (uint8_t r = 0; r < R; r++)
-//   {
-//     for (uint8_t c = 0; c < C; c++)
-//     {
-//       butarray[C * r + c].a = but_size_a; /* Calculated*/
-//       butarray[C * r + c].b = but_size_b; /* Calculated*/
-//       butarray[C * r + c].xc = x_margin + c * (but_size_a + dx);
-//       butarray[C * r + c].yc = y_margin + r * (but_size_b + dy);
-//       butarray[C * r + c].txt_size = txt_size;
-//       butarray[C * r + c].txt_color = txt_color;
-//       butarray[C * r + c].border_color = border_color;
-//       butarray[C * r + c].face_color = face_color;
-//       butarray[C * r + c].roundRect = roundRect;
-//       butarray[C * r + c].latchButton = latchButton;
-
-//       butarray[C * r + c].createButton(but_txt[C * r + c]);
-//     }
+//     return 0;
 //   }
 // }
 
-// template <uint8_t N>
-// uint8_t buttonArrayTFT<N>::checkPress(TS_Point &p)
-// {
-//   if (butarray[0].TS[0]->touched()) // check in any press occured
-//   {
-//     for (uint8_t i = 0; i < N; i++)
-//     {
-//       if (butarray[i].checkPress(p))
-//       {
-//         return i;
-//       }
-//     }
-//     return 99;
-//   }
-//   else
-//   {
-//     return 99;
-//   }
-// }
-// /* End of template */
+/* End of template */
 
 // class keypadTFT
 // {
@@ -243,8 +240,8 @@ private:
 // public:
 //   uint8_t counter = 0;
 //   uint8_t &scale_f = _butarray.scale_f;
-//   uint8_t &shift_y = _butarray.shift_y;
-//   uint8_t &shift_x = _butarray.shift_x;
+//   uint8_t &shift_pos_h = _butarray.shift_pos_h;
+//   uint8_t &shift_pos_w = _butarray.shift_pos_w;
 //   uint8_t &txt_size = _butarray.butarray[0].txt_size;
 //   int &shrink_shift = _butarray.shrink_shift;
 //   uint16_t &txt_color = _butarray.butarray[0].txt_color;
