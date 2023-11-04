@@ -168,6 +168,7 @@ void ButtonTFT::_press_cb()
   }
   else
   {
+    _latchState = !_latchState;
     if (_latchState) /* Pressed ON*/
     {
       _face_color_temp = tft_entity.face_color;
@@ -181,7 +182,6 @@ void ButtonTFT::_press_cb()
       createMSG(_txt_buf);
       delay(_press_del);
     }
-    _latchState = !_latchState;
   }
 }
 bool ButtonTFT::_check_press_geometry(TS_Point &p)

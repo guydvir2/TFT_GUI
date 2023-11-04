@@ -57,7 +57,7 @@ protected:
 
 public:
   MessageTFT(Adafruit_ILI9341 &_tft = tft);
-  void createMSG(const char *txt);
+  void createMSG(const char *txt = "@");
   void createPage(const char *txt[]); // Multiple Lines in MSG
   void updateTXT(const char *txt);
   void clear_screen(uint8_t c = 0);
@@ -71,15 +71,15 @@ private:
 class ButtonTFT : public MessageTFT
 {
 public:
+  XPT2046_Touchscreen *TS[1];
+
   ButtonTFT(XPT2046_Touchscreen &_ts = ts, Adafruit_ILI9341 &_tft = tft);
   void createButton(const char *txt);
   bool wait4press();
   bool checkPress(TS_Point &p);
   bool get_buttonState();
   void set_buttonState(bool state);
-  XPT2046_Touchscreen *TS[1];
 
-protected:
 private:
   bool _latchState = false;
   unsigned long _lastPress = 0;
@@ -97,10 +97,10 @@ template <uint8_t N>
 class buttonArrayTFT
 {
 public:
-  uint8_t dw = 4;           /* define spacing between buttons */
-  uint8_t dh = 4;           /* define spacing between buttons */
-  uint8_t shift_pos_h = 10; /* Shifts in y director*/
-  uint8_t shift_pos_w = 10; /* Shifts in x director*/
+  uint8_t dw = 4;       /* define spacing between buttons */
+  uint8_t dh = 4;       /* define spacing between buttons */
+  int shift_pos_h = 10; /* Shifts in y director*/
+  int shift_pos_w = 10; /* Shifts in x director*/
 
   ButtonTFT butarray[N];
 
@@ -109,6 +109,7 @@ public:
   void set_button_properties(TFT_entity entity);
   void create_array(uint8_t R, uint8_t C, const char *but_txt[]);
   uint8_t checkPress();
+  uint8_t total_pressed();
   ButtonTFT &operator[](uint8_t index)
   {
     if (index < N)
@@ -210,18 +211,19 @@ void buttonArrayTFT<N>::set_button_properties(TFT_entity entity)
   butarray[0].tft_entity = entity;
 }
 
-// bool buttonArrayTFT<N>::wait4press()
-// {
-//     if (TS[0]->touched())
-//   {
-//     TS_Point p = TS[0]->getPoint();
-//     return checkPress(p); /* in or out ? */
-//   }
-//   else
-//   {
-//     return 0;
-//   }
-// }
+template <uint8_t N>
+uint8_t buttonArrayTFT<N>::total_pressed()
+{
+  uint8_t n = 0;
+  for (uint8_t i = 0; i < N; i++)
+  {
+    if (butarray[i].get_buttonState())
+    {
+      n++;
+    }
+  }
+  return n;
+}
 
 /* End of template */
 
