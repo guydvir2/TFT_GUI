@@ -129,7 +129,8 @@ bool ButtonTFT::checkPress(TS_Point &p) /* can be called from code outside lib w
   {
     if (millis() - _lastPress > 400) /* avoid retrigger */
     {
-      _update_button_look();
+      _latchState = !_latchState;
+      _update_button_look(_latchState);
       _lastPress = millis();
       return 1;
     }
@@ -150,9 +151,9 @@ bool ButtonTFT::get_buttonState()
 }
 void ButtonTFT::set_buttonState(bool state)
 {
-  _update_button_look();
+  _update_button_look(state);
 }
-void ButtonTFT::_update_button_look()
+void ButtonTFT::_update_button_look(bool state)
 {
   uint16_t _face_color_temp;
   int _press_del = 100; // slow down re-triggerring
@@ -168,9 +169,9 @@ void ButtonTFT::_update_button_look()
   }
   else
   {
-    _latchState = !_latchState;
-    if (_latchState) /* Pressed ON*/
+    if (state) /* Pressed ON*/
     {
+      Serial.println("ON");
       _face_color_temp = tft_entity.face_color;
       tft_entity.face_color = tft_entity.pressface_color;
       createLabel(_txt_buf);
@@ -179,6 +180,7 @@ void ButtonTFT::_update_button_look()
     }
     else /* Pressed Off*/
     {
+      Serial.println("OFF");
       createLabel(_txt_buf);
       delay(_press_del);
     }

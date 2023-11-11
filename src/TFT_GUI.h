@@ -21,7 +21,6 @@
 const uint8_t _pos_corr_factor_w = 3;
 const uint8_t _pos_corr_factor_h = 4;
 
-
 extern Adafruit_ILI9341 tft;   /* Graphics */
 extern XPT2046_Touchscreen ts; /* Touch screen */
 
@@ -86,7 +85,7 @@ private:
   unsigned long _lastPress = 0;
 
 private:
-  void _update_button_look();
+  void _update_button_look(bool state);
   void _conv_ts_tft(TS_Point &p, int &retW, int &retH);
   bool _check_press_geometry(TS_Point &p);
   int _TS2TFT_x(int px);
@@ -111,6 +110,8 @@ public:
   void create_array(uint8_t R, uint8_t C, const char *but_txt[]);
   uint8_t checkPress(uint8_t n = 0);
   uint8_t total_pressed();
+  void get_pressed(bool pressed_array[], uint8_t n);
+  void set_pressed(bool pressed_array[], uint8_t n);
   ButtonTFT &operator[](uint8_t index)
   {
     if (index < N)
@@ -230,6 +231,25 @@ uint8_t buttonArrayTFT<N>::total_pressed()
   }
   return n;
 }
+
+template <uint8_t N>
+void buttonArrayTFT<N>::get_pressed(bool pressed_array[], uint8_t n)
+{
+  for (uint8_t i = 0; i < n; i++)
+  {
+    pressed_array[i] = butarray[i].get_buttonState();
+  }
+}
+
+template <uint8_t N>
+void buttonArrayTFT<N>::set_pressed(bool pressed_array[], uint8_t n)
+{
+  for (uint8_t i = 0; i < n; i++)
+  {
+    butarray[i].set_buttonState(pressed_array[i]);
+  }
+}
+
 
 /* End of template */
 
