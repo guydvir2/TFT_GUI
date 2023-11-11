@@ -21,6 +21,7 @@
 const uint8_t _pos_corr_factor_w = 3;
 const uint8_t _pos_corr_factor_h = 4;
 
+
 extern Adafruit_ILI9341 tft;   /* Graphics */
 extern XPT2046_Touchscreen ts; /* Touch screen */
 
@@ -46,7 +47,7 @@ struct TFT_entity
   uint16_t pressface_color = ILI9341_CYAN;
 };
 
-class MessageTFT
+class LabelTFT
 {
 public:
   TFT_entity tft_entity;
@@ -56,8 +57,8 @@ protected:
   char _txt_buf[30];
 
 public:
-  MessageTFT(Adafruit_ILI9341 &_tft = tft);
-  void createMSG(const char *txt = "@");
+  LabelTFT(Adafruit_ILI9341 &_tft = tft);
+  void createLabel(const char *txt = "@");
   void createPage(const char *txt[]); // Multiple Lines in MSG
   void updateTXT(const char *txt);
   void clear_screen(uint8_t c = 0);
@@ -68,7 +69,7 @@ private:
   void _drawBorder();
 };
 
-class ButtonTFT : public MessageTFT
+class ButtonTFT : public LabelTFT
 {
 public:
   XPT2046_Touchscreen *TS[1];
@@ -85,7 +86,7 @@ private:
   unsigned long _lastPress = 0;
 
 private:
-  void _press_cb();
+  void _update_button_look();
   void _conv_ts_tft(TS_Point &p, int &retW, int &retH);
   bool _check_press_geometry(TS_Point &p);
   int _TS2TFT_x(int px);
@@ -108,7 +109,7 @@ public:
   buttonArrayTFT(XPT2046_Touchscreen &_ts = ts, Adafruit_ILI9341 &_tft = tft);
   void set_button_properties(TFT_entity entity);
   void create_array(uint8_t R, uint8_t C, const char *but_txt[]);
-  uint8_t checkPress();
+  uint8_t checkPress(uint8_t n = 0);
   uint8_t total_pressed();
   ButtonTFT &operator[](uint8_t index)
   {
@@ -185,12 +186,17 @@ void buttonArrayTFT<N>::create_array(uint8_t R, uint8_t C, const char *but_txt[]
 }
 
 template <uint8_t N>
-uint8_t buttonArrayTFT<N>::checkPress()
+uint8_t buttonArrayTFT<N>::checkPress(uint8_t n)
 {
+  if (n == 0)
+  {
+    n = N;
+  }
+
   if (butarray[0].TS[0]->touched()) // check in any press occured
   {
     TS_Point p = butarray[0].TS[0]->getPoint();
-    for (uint8_t i = 0; i < N; i++)
+    for (uint8_t i = 0; i < n; i++)
     {
       if (butarray[i].checkPress(p))
       {

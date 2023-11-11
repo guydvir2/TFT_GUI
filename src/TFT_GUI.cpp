@@ -1,17 +1,17 @@
 #include "TFT_GUI.h"
 
-MessageTFT::MessageTFT(Adafruit_ILI9341 &_tft)
+LabelTFT::LabelTFT(Adafruit_ILI9341 &_tft)
 {
   TFT[0] = &_tft;
 }
-void MessageTFT::createMSG(const char *txt)
+void LabelTFT::createLabel(const char *txt)
 {
   _drawFace();
   _put_text(txt);
 }
-void MessageTFT::createPage(const char *txt[])
+void LabelTFT::createPage(const char *txt[])
 {
-  createMSG("");
+  createLabel("");
   const uint8_t shiftxy = 5;
   for (uint8_t i = 0; i < tft_entity.corner_radius; i++) // multiple lines
   {
@@ -19,12 +19,12 @@ void MessageTFT::createPage(const char *txt[])
     TFT[0]->println(txt[i]);
   }
 }
-void MessageTFT::updateTXT(const char *txt)
+void LabelTFT::updateTXT(const char *txt)
 {
   _put_text(_txt_buf, tft_entity.face_color); // faster to change color txt to face color, than redraw (mostly for clks)
   _put_text(txt);
 }
-void MessageTFT::clear_screen(uint8_t c)
+void LabelTFT::clear_screen(uint8_t c)
 {
   if (c == 0)
   {
@@ -39,7 +39,7 @@ void MessageTFT::clear_screen(uint8_t c)
     TFT[0]->fillScreen(ILI9341_BLUE);
   }
 }
-void MessageTFT::_drawFace()
+void LabelTFT::_drawFace()
 {
   int _calc_wpos = tft_entity.w_pos - tft_entity.w / 2;
   int _calc_hpos = tft_entity.h_pos - tft_entity.h / 2;
@@ -58,7 +58,7 @@ void MessageTFT::_drawFace()
     _drawBorder();
   }
 }
-void MessageTFT::_drawBorder()
+void LabelTFT::_drawBorder()
 {
   int _calc_wpos = tft_entity.w_pos - tft_entity.w / 2;
   int _calc_hpos = tft_entity.h_pos - tft_entity.h / 2;
@@ -77,7 +77,7 @@ void MessageTFT::_drawBorder()
     }
   }
 }
-void MessageTFT::_put_text(const char *txt, uint16_t color)
+void LabelTFT::_put_text(const char *txt, uint16_t color)
 {
   strcpy(_txt_buf, txt);
   uint8_t x = strlen(_txt_buf);
@@ -109,7 +109,7 @@ ButtonTFT::ButtonTFT(XPT2046_Touchscreen &_ts, Adafruit_ILI9341 &_tft)
 }
 void ButtonTFT::createButton(const char *txt)
 {
-  createMSG(txt);
+  createLabel(txt);
 }
 bool ButtonTFT::wait4press() /* include getPoint loop - use for simple cases*/
 {
@@ -129,7 +129,7 @@ bool ButtonTFT::checkPress(TS_Point &p) /* can be called from code outside lib w
   {
     if (millis() - _lastPress > 400) /* avoid retrigger */
     {
-      _press_cb();
+      _update_button_look();
       _lastPress = millis();
       return 1;
     }
@@ -150,9 +150,9 @@ bool ButtonTFT::get_buttonState()
 }
 void ButtonTFT::set_buttonState(bool state)
 {
-  _press_cb();
+  _update_button_look();
 }
-void ButtonTFT::_press_cb()
+void ButtonTFT::_update_button_look()
 {
   uint16_t _face_color_temp;
   int _press_del = 100; // slow down re-triggerring
@@ -161,10 +161,10 @@ void ButtonTFT::_press_cb()
   {
     _face_color_temp = tft_entity.face_color;
     tft_entity.face_color = tft_entity.pressface_color;
-    createMSG(_txt_buf);
+    createLabel(_txt_buf);
     delay(_press_del);
     tft_entity.face_color = _face_color_temp;
-    createMSG(_txt_buf);
+    createLabel(_txt_buf);
   }
   else
   {
@@ -173,13 +173,13 @@ void ButtonTFT::_press_cb()
     {
       _face_color_temp = tft_entity.face_color;
       tft_entity.face_color = tft_entity.pressface_color;
-      createMSG(_txt_buf);
+      createLabel(_txt_buf);
 
       tft_entity.face_color = _face_color_temp;
     }
     else /* Pressed Off*/
     {
-      createMSG(_txt_buf);
+      createLabel(_txt_buf);
       delay(_press_del);
     }
   }
