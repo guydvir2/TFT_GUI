@@ -153,6 +153,10 @@ void ButtonTFT::set_buttonState(bool state)
 {
   _update_button_look(state);
 }
+void ButtonTFT::clear_buttonState()
+{
+  _latchState = 0;
+}
 void ButtonTFT::_update_button_look(bool state)
 {
   uint16_t _face_color_temp;

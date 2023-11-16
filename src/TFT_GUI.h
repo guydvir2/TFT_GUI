@@ -79,10 +79,11 @@ public:
   bool checkPress(TS_Point &p);
   bool get_buttonState();
   void set_buttonState(bool state);
+  void clear_buttonState();
 
 private:
   bool _latchState = false;
-  unsigned long _lastPress = 0;
+  unsigned long _lastPress = 1;
 
 private:
   void _update_button_look(bool state);
@@ -112,6 +113,7 @@ public:
   uint8_t total_pressed();
   void get_pressed(bool pressed_array[], uint8_t n);
   void set_pressed(bool pressed_array[], uint8_t n);
+
   ButtonTFT &operator[](uint8_t index)
   {
     if (index < N)
@@ -249,7 +251,6 @@ void buttonArrayTFT<N>::set_pressed(bool pressed_array[], uint8_t n)
     butarray[i].set_buttonState(pressed_array[i]);
   }
 }
-
 
 /* End of template */
 
